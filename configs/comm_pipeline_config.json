@@ -1,0 +1,85 @@
+{
+  "tasks": [
+    {
+      "name": "Send Daily Sales Report Email",
+      "type": "send_email",
+      "parameters": {
+        "recipients": {
+          "to": ["${TEST_RECIPIENT_EMAIL}"],
+          "cc": ["${SENDER_EMAIL}"]
+        },
+        "subject_template": "[{student_id} {student_name}] Daily Sales Report - {report_date}",
+        "body_template": "Dear Team,\n\nPlease find the latest sales report for {report_date} attached. Total sales: ${sales_figure:,.2f}. Total active customers: {total_customers}.\n\nBest regards,\nAutomated Agent\n\n--\nชื่อ-นามสกุล (Name): {student_name}\nรหัสนักศึกษา (Student ID): {student_id}",
+        "attachments": [
+          "data/reports/sales_report.pdf",
+          "data/reports/summary_data.xlsx"
+        ],
+        "is_html": false
+      },
+      "output_context_key": "report_email_sent"
+    },
+    {
+      "name": "Send Sales Alert SMS",
+      "type": "send_sms",
+      "parameters": {
+        "phone_numbers": ["${TEST_SMS_PHONE_NUMBER}"],
+        "message_template": "{student_id}: Sales for {report_date} are ${sales_figure:,.2f}. Total customers: {total_customers}. Review!",
+        "carrier_name": "${TEST_SMS_CARRIER}"
+      }
+    },
+    {
+      "name": "Simulate Incoming Request Email (to self)",
+      "type": "send_email",
+      "parameters": {
+        "recipients": {
+          "to": ["${SENDER_EMAIL}"]
+        },
+        "subject_template": "[{student_id} {student_name}] Data Request for {report_date} - Urgent",
+        "body_template": "Hello Agent,\n\nWe need the latest data for {report_date}. Please process urgently. This email includes attachments.\n\nThank you,\nClient Team\n\nThis is an urgent request for new data processing.\n\n--\nชื่อ-นามสกุล (Name): {student_name}\nรหัสนักศึกษา (Student ID): {student_id}",
+        "attachments": [
+          "data/reports/sales_report.pdf"
+        ],
+        "is_html": false
+      },
+      "output_context_key": "simulated_email_sent"
+    },
+    {
+      "name": "Process Incoming Data Requests",
+      "type": "process_inbox",
+      "parameters": {
+        "mailbox": "INBOX",
+        "wait_before_search_seconds": 10,
+        "search_criteria": {
+          "status": "UNSEEN",
+          "from_sender": "${SENDER_EMAIL}",
+          "subject_contains": "Data Request"
+        },
+        "download_attachments_base_dir": "data/incoming_attachments",
+        "rules": [
+          {
+            "if": {
+              "subject_contains": "Urgent",
+              "has_attachments": true
+            },
+            "then": {
+              "send_sms_alert": true,
+              "alert_phone_numbers": ["${TEST_SMS_PHONE_NUMBER}"],
+              "alert_carrier": "${TEST_SMS_CARRIER}",
+              "alert_message_template": "URGENT: New Data Request email received from {sender} - Subject: {subject}. Check attachments in {attachments_meta[0][filepath]}"
+            }
+          },
+          {
+            "if": {
+              "body_contains": "new data processing"
+            },
+            "then": {
+              "reply_with_template": "Agent received your request for '{subject}'. We are now processing the new data. You will receive an update shortly.\n\n--\nชื่อ-นามสกุล (Name): {student_name}\nรหัสนักศึกษา (Student ID): {student_id}",
+              "reply_subject_template": "Re: {subject} - Received & Processing"
+            }
+          }
+        ]
+      },
+      "output_context_key": "processed_inbox_results"
+    }
+  ]
+}

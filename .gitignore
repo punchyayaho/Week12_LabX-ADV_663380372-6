@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+.ipynb_checkpoints/
+.vscode/
+
+# Environment variables - DO NOT COMMIT YOUR .env FILE
+.env
+venv/
+.venv/
+env/
+
+# Log files
+*.log
+
+# Generated files / downloaded attachments
+data/incoming_attachments/*
+!data/incoming_attachments/.gitkeep
+reports/
